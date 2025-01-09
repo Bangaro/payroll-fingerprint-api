@@ -1,0 +1,6 @@
+﻿services:
+  fingerprint-service:
+    image: fingerprint-service
+    build:
+      context: .
+      dockerfile: fingerprint-service/Dockerfile

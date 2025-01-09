@@ -1,0 +1,21 @@
+@fingerprint_service_HostAddress = http://localhost:5159
+
+
+###
+GET {{fingerprint_service_HostAddress}}/fingerprint/fingerprint-status
+Accept: application/json
+###
+
+GET {{fingerprint_service_HostAddress}}/fingerprint/test-connection
+Accept: application/json
+###
+
+
+GET {{fingerprint_service_HostAddress}}/fingerprint/check-fingerprint-matches
+Accept: application/json
+###
+
+POST {{fingerprint_service_HostAddress}}/fingerprint/process-fingerprint
+Accept: application/json
+###
+

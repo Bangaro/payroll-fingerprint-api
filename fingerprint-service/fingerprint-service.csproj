@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>fingerprint_service</RootNamespace>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0"/>
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
+        <PackageReference Include="MySql.Data" Version="9.1.0" />
+    </ItemGroup>
+   
+    <ItemGroup>
+        <Reference Include="DPCtlUruNet">
+            <HintPath>lib\DPCtlUruNet.dll</HintPath>
+        </Reference>
+        <Reference Include="DPUruNet">
+            <HintPath>lib\DPUruNet.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+</Project>
