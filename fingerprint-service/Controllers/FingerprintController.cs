@@ -1,9 +1,6 @@
-﻿using fingerprint_service.db;
-using fingerprint_service.Dtos;
-using Microsoft.AspNetCore.Mvc;
-using fingerprint_service.Services;
+﻿using fingerprint_service.Dtos;
 using fingerprint_service.Services.Interfaces;
-using MySql.Data.MySqlClient;
+using Microsoft.AspNetCore.Mvc;
 
 namespace fingerprint_service.Controllers;
 
@@ -17,7 +14,7 @@ public class FingerprintController : ControllerBase
     {
         _fingerprintService = fingerprintService;
     }
-    
+
     [HttpGet("test-connection")]
     public IActionResult TestConnection()
     {
@@ -33,17 +30,19 @@ public class FingerprintController : ControllerBase
     }
 
     /// <summary>
-    /// Procesa una imagen de huella digital en formato Base64.
+    /// Procesa e inscribe una huella digital en formato Base64.
     /// </summary>
-    /// <param name="request">Objeto que contiene los datos de la imagen.</param>
-    /// <returns>Una respuesta indicando el éxito o fracaso de la operación.</returns>
+    /// <param name="request">Un objeto DtoFingerprintImageRequest que contiene los datos de la huella digital
+    ///   que se va a procesar e inscribir.</param>
+    /// <returns>
+    ///   Un objeto IActionResult que indica el resultado de la operación. En caso de éxito,
+    ///   devuelve un código de estado 200 OK y el objeto ApiResponse que contiene la información de la respuesta.
+    /// </returns>
     [HttpPost("process-fingerprint")]
-    public IActionResult ProcessFingerprint([FromBody] DtoFingerprintImageRequest request)
+    public IActionResult ProcessAndEnrollFingerprint([FromBody] DtoFingerprintImageRequest request)
     {
-        
         if (!ModelState.IsValid)
         {
-            // Organizar los errores en un diccionario clave-valor
             var errors = ModelState
                 .Where(ms => ms.Value.Errors.Any())
                 .ToDictionary(
@@ -51,7 +50,6 @@ public class FingerprintController : ControllerBase
                     ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                 );
 
-            // Devolver los errores como una respuesta estructurada
             return BadRequest(new
             {
                 success = false,
@@ -59,30 +57,10 @@ public class FingerprintController : ControllerBase
                 errors
             });
         }
-        
-        if (request.FingerprintsData == null || request.FingerprintsData.Length == 0)
-        {
-            return BadRequest(new ApiResponse<string>(
-                success: false,
-                message: "No se proporcionaron huellas digitales en la solicitud."
-            ));
-        }
-
-        // Validar que cada huella en la colección no esté vacía o sea inválida
-        foreach (var fingerprintData in request.FingerprintsData)
-        {
-            if (string.IsNullOrWhiteSpace(fingerprintData))
-            {
-                return BadRequest(new ApiResponse<string>(
-                    success: false,
-                    message: "Una o más huellas digitales en la solicitud están vacías o son inválidas."
-                ));
-            }
-        }
 
         try
         {
-            var response = _fingerprintService.ProcessRaw(request);
+            var response = _fingerprintService.ProcessAndEnrollFingerprint(request);
 
             if (!response.Success)
             {
@@ -91,23 +69,70 @@ public class FingerprintController : ControllerBase
 
             return Ok(response);
         }
-        catch (FormatException)
-        {
-            return BadRequest(new ApiResponse<string>(
-                success: false,
-                message: "La imagen proporcionada no está en un formato Base64 válido."
-            ));
-        }
         catch (Exception ex)
         {
             return StatusCode(500, new ApiResponse<string>(
                 success: false,
-                message: "Error interno al procesar la huella.",
-                data: null
+                message: "Error interno al procesar e inscribir la huella digital."
             ));
         }
     }
     
+    
+    /// <summary>
+    /// Identifica una persona a partir de una huella digital.
+    /// </summary>
+    /// <param name="request">Un objeto FingerprintCompareRequest que contiene los datos de la huella digital a identificar.</param>
+    /// <returns>
+    /// Un objeto IActionResult que indica el resultado de la operación. 
+    /// En caso de éxito, devuelve un código de estado 200 OK y el objeto ApiResponse que contiene la información de la persona identificada. 
+    /// En caso de que no se encuentre ninguna coincidencia, devuelve un código de estado 404 NotFound y el objeto ApiResponse con un mensaje de error. 
+    /// En caso de error interno, devuelve un código de estado 500 InternalServerError y un objeto ApiResponse con un mensaje de error genérico.
+    /// </returns>
+    [HttpPost("identify-fingerprint")]
+    public IActionResult IdentifyFingerprint([FromBody] FingerprintCompareRequest request)
+    {
+        if (string.IsNullOrEmpty(request.FingerprintData))
+        {
+            return BadRequest(new ApiResponse<string>(
+                success: false,
+                message: "Los datos de la huella son obligatorios."
+            ));
+        }
+
+        try
+        {
+            var result = _fingerprintService.IdentifyFingerprint(request.FingerprintData);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            else
+            {
+                return NotFound(result);
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<DtoFingerprintResponse>(
+                success: false,
+                message: "Error interno al identificar la huella digital."
+            ));
+        }
+    }
+
+
+    /// <summary>
+    /// Compara una huella digital con las huellas almacenadas en la base de datos.
+    /// </summary>
+    /// <param name="request">Un objeto FingerprintCompareRequest que contiene los datos de la huella digital a comparar.</param>
+    /// <returns>
+    /// Un objeto IActionResult que indica el resultado de la operación. 
+    /// En caso de éxito, devuelve un código de estado 200 OK y el objeto ApiResponse que contiene la información de la huella coincidente (si la hay). 
+    /// En caso de que no se encuentre ninguna coincidencia, devuelve un código de estado 200 OK y el objeto ApiResponse con un mensaje indicando que no se encontraron coincidencias.
+    /// En caso de error, devuelve un código de estado 500 InternalServerError y un objeto ApiResponse con un mensaje de error genérico. 
+    /// </returns>
     [HttpPost("compare-fingerprint")]
     public IActionResult CompareFingerprint([FromBody] FingerprintCompareRequest request)
     {
@@ -127,24 +152,53 @@ public class FingerprintController : ControllerBase
         }
         else
         {
-            return StatusCode(404, result);
+            return NotFound(result);
         }
     }
     
-    [HttpGet("check-fingerprint-matches", Name = "CheckFingerprintMatches")]
-    public IActionResult CheckFingerprintMatches()
-    {
-        var result = _fingerprintService.CheckFingerprintMatchesInDatabase();
 
-        if (result.Success)
+    /// <summary>
+    /// Elimina una huella digital o todas las huellas de un empleado.
+    /// </summary>
+    /// <param name="request">Un objeto DtoFingerprintDelete que contiene el ID del empleado y opcionalmente el dedo de la huella a eliminar.</param>
+    /// <returns>
+    /// Un objeto IActionResult que indica el resultado de la operación. 
+    /// En caso de éxito, devuelve un código de estado 200 OK y el objeto ApiResponse que indica que la eliminación fue exitosa. 
+    /// En caso de error de validación, devuelve un código de estado 400 BadRequest y un objeto ApiResponse con un mensaje de error. 
+    /// En caso de que no se encuentre la huella o el empleado, devuelve un código de estado 404 NotFound y el objeto ApiResponse con un mensaje de error. 
+    /// En caso de error interno, devuelve un código de estado 500 InternalServerError y un objeto ApiResponse con un mensaje de error genérico.
+    /// </returns>
+    [HttpDelete("delete-fingerprint")]
+    public IActionResult DeleteFingerprint([FromBody] DtoFingerprintDelete request)
+    {
+        if (request.EmployeeId <= 0)
         {
-            return Ok(result);
+            return BadRequest(new ApiResponse<bool>(
+                success: false,
+                message: "El ID del empleado es obligatorio."
+            ));
         }
-        else
+
+        try
         {
-            return StatusCode(500, result);
+            var result = _fingerprintService.DeleteFingerprint(request);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            else
+            {
+                return NotFound(result);
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<bool>(
+                success: false,
+                message: "Error interno al eliminar la huella digital."
+            ));
         }
     }
-
 
 }

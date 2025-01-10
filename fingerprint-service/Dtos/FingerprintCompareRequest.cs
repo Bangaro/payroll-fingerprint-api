@@ -2,5 +2,8 @@
 
 public class FingerprintCompareRequest
 {
-    public string FingerprintData { get; set; } // Datos de la huella en formato Base64
+    /// <summary>
+    /// Datos de la huella en formato Base64
+    /// </summary>
+    public string FingerprintData { get; set; }  
 }

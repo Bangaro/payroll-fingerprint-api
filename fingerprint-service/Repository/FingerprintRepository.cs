@@ -188,9 +188,9 @@ public class FingerprintRepository : IFingerprintRepository
     
     public bool DeleteAllUserFingerprints(int employeeId)
     {
-        return DeleteFingerprints(new DtoDeleteFingerprint { EmployeeId = employeeId });
+        return DeleteFingerprints(new DtoFingerprintDelete { EmployeeId = employeeId });
     }
-    public bool DeleteUserFingerprint(DtoDeleteFingerprint fingerprint)
+    public bool DeleteUserFingerprint(DtoFingerprintDelete fingerprint)
     {
         if (fingerprint.Finger == null)
         {
@@ -204,13 +204,13 @@ public class FingerprintRepository : IFingerprintRepository
     /// Elimina huellas digitales de un empleado.
     /// 
     /// Este método permite eliminar una o todas las huellas digitales de un empleado, 
-    /// dependiendo del valor del parámetro `Finger`. Si `Finger` es nulo, se eliminarán 
-    /// todas las huellas del empleado. Si se especifica un valor para `Finger`, 
+    /// dependiendo del valor del parámetro Finger. Si Finger es nulo, se eliminarán 
+    /// todas las huellas del empleado. Si se especifica un valor para Finger, 
     /// solo se eliminará la huella correspondiente a ese dedo.
     /// </summary>
     /// <param name="fingerprint">Un objeto que contiene el ID del empleado y opcionalmente el dedo a eliminar.</param>
     /// <returns>True si se eliminó al menos una huella, false en caso contrario.</returns>
-    private bool DeleteFingerprints(DtoDeleteFingerprint fingerprint)
+    private bool DeleteFingerprints(DtoFingerprintDelete fingerprint)
     {
         // Indicador para determinar si la eliminación fue exitosa
         bool isDeleted = false;

@@ -43,7 +43,7 @@ public interface IFingerprintRepository
     /// </summary>
     /// <param name="fingerprint">El objeto DtoDeleteFingerprint que representa la huella a eliminar.</param>
     /// <returns>True si la operación se realizó con éxito, False en caso contrario.</returns>
-    bool DeleteUserFingerprint(DtoDeleteFingerprint fingerprint);
+    bool DeleteUserFingerprint(DtoFingerprintDelete fingerprint);
 
     /// <summary>
     /// Elimina todas las huellas dactilares de un empleado específico.

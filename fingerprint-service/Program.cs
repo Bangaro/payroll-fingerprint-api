@@ -26,7 +26,12 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
+// Agregar servicios de Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -41,5 +46,14 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+
+
+// Usar Swagger en la aplicación
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Fingerprint API v1");
+    });
 
 app.Run();
