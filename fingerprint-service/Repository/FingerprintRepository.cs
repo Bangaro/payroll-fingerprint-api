@@ -72,7 +72,6 @@ public class FingerprintRepository : IFingerprintRepository
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                connection.Open();
 
                 var query = $@"
                 SELECT f.id, f.id_employee, f.finger, f.fmd, f.fmd_quality, f.created_date
@@ -124,8 +123,6 @@ public class FingerprintRepository : IFingerprintRepository
         {
             using (var connection = _dbConnection.CreateConnection())
             {
-                connection.Open();
-
                 var query = $@"
                 SELECT id, id_employee, finger, fmd, fmd_quality, created_date
                 FROM {fingerprintTable} WHERE id_employee = @employee;";
@@ -165,6 +162,61 @@ public class FingerprintRepository : IFingerprintRepository
 
         return fingerprints;
     }
+    
+    public Employee GetEmployeeById(int employeeId)
+    {
+        Employee employee = null;
+        _logger.LogInformation($"Consultando datos del empleado con ID: {employeeId}.");
+
+        try
+        {
+            using (var connection = _dbConnection.CreateConnection())
+            {
+
+                var query = @"
+                SELECT 
+                    id, id_company, name, email, nid_user, phone, job, is_active
+                FROM payroll_employees
+                WHERE id = @employeeId;";
+
+                using (var command = new MySqlCommand(query, (MySqlConnection)connection))
+                {
+                    command.Parameters.AddWithValue("@employeeId", employeeId);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            employee = new Employee
+                            {
+                                Id = Convert.ToInt32(reader["id"]),
+                                IdCompany = Convert.ToInt32(reader["id_company"]),
+                                Name = reader["name"].ToString(),
+                                Email = reader["email"].ToString(),
+                                NidUser = reader["nid_user"].ToString(),
+                                Phone = reader["phone"].ToString(),
+                                Job = reader["job"].ToString(),
+                                IsActive = Convert.ToBoolean(reader["is_active"])
+                            };
+                        }
+                    }
+                }
+            }
+
+            if (employee == null)
+            {
+                _logger.LogInformation($"No se encontró un empleado con ID: {employeeId}.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error al consultar datos del empleado con ID: {employeeId}.");
+            throw;
+        }
+
+        return employee;
+    }
+
     
 
     public bool AddFingerprint(Fingerprint fingerprint)
@@ -222,8 +274,6 @@ public class FingerprintRepository : IFingerprintRepository
 
         using (var connection = _dbConnection.CreateConnection())
         {
-            connection.Open();
-
             // Construir la consulta SQL según si se especificó un dedo
             var query = $@"
             DELETE FROM {fingerprintTable}

@@ -18,7 +18,7 @@ namespace fingerprint_service.Services.Interfaces
         /// <remarks>
         /// Este método aún no está implementado.
         /// </remarks>
-        ApiResponse<DtoFingerprintResponse> IdentifyFingerprint(string fingerprintBase64);
+        ApiResponse<DtoFingerprintResponse> IdentifyFingerprint(FingerprintCompareRequest request);
 
         /// <summary>
         /// Procesa una solicitud de inscripción de huella digital y la registra en la base de datos.

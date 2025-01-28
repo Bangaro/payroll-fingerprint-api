@@ -36,7 +36,7 @@ public class FingerprintController : ControllerBase
     ///   que se va a procesar e inscribir.</param>
     /// <returns>
     ///   Un objeto IActionResult que indica el resultado de la operación. En caso de éxito,
-    ///   devuelve un código de estado 200 OK y el objeto ApiResponse que contiene la información de la respuesta.
+    ///   devuelve el objeto ApiResponse que contiene la información de la respuesta.
     /// </returns>
     [HttpPost("process-fingerprint")]
     public IActionResult ProcessAndEnrollFingerprint([FromBody] DtoFingerprintImageRequest request)
@@ -92,17 +92,26 @@ public class FingerprintController : ControllerBase
     [HttpPost("identify-fingerprint")]
     public IActionResult IdentifyFingerprint([FromBody] FingerprintCompareRequest request)
     {
-        if (string.IsNullOrEmpty(request.FingerprintData))
+        if (!ModelState.IsValid)
         {
-            return BadRequest(new ApiResponse<string>(
-                success: false,
-                message: "Los datos de la huella son obligatorios."
-            ));
+            var errors = ModelState
+                .Where(ms => ms.Value.Errors.Any())
+                .ToDictionary(
+                    ms => ms.Key,
+                    ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                );
+
+            return BadRequest(new
+            {
+                success = false,
+                message = "Se encontraron errores de validación.",
+                errors
+            });
         }
 
         try
         {
-            var result = _fingerprintService.IdentifyFingerprint(request.FingerprintData);
+            var result = _fingerprintService.IdentifyFingerprint(request);
 
             if (result.Success)
             {

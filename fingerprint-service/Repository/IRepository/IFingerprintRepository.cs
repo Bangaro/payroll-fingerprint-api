@@ -30,6 +30,11 @@ public interface IFingerprintRepository
     /// <param name="employeeId">El ID del empleado.</param>
     /// <returns>Una colección de objetos Fingerprint que representan las huellas dactilares del empleado.</returns>
     IEnumerable<Fingerprint> GetEmployeeFingerprints(int employeeId);
+    
+    /// <summary>
+    /// Obtiene los datos más relevantes de un empleado con base en su ID.
+    /// </summary>
+    Employee GetEmployeeById(int employeeId);
 
     /// <summary>
     /// Agrega una nueva huella dactilar a la base de datos.

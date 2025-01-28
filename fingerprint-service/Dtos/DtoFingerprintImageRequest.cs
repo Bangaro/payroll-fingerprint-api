@@ -8,8 +8,8 @@ public class DtoFingerprintImageRequest
     /// Identificador del usuario asociado a la huella.
     /// </summary>
     [Required(ErrorMessage = "El ID del empleado es obligatorio.")]
-    public int? EmployeeId { get; set; }
-
+    public int EmployeeId { get; set; }
+    
     /// <summary>
     /// Dedo al que corresponde la huella.
     /// </summary>

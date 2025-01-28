@@ -64,7 +64,7 @@ public class FingerprintService : IFingerprintService
                 if (fingerprintExists.Data != null)
                 {
                     _logger.LogInformation("La huella digital coincide con un registro existente.");
-                    return new ApiResponse<string>(false, "La huella coincide con un registro existente.", fingerprintExists.Data.Finger.ToString());
+                    return new ApiResponse<string>(false, "La huella coincide con un registro existente.", fingerprintExists.Data.Finger + ", Empleado: " + fingerprintExists.Data.EmployeeId);
                 }
             }
 
@@ -179,10 +179,10 @@ public class FingerprintService : IFingerprintService
     
 
 
-    public ApiResponse<DtoFingerprintResponse> IdentifyFingerprint(string fingerprintBase64)
+    public ApiResponse<DtoFingerprintResponse> IdentifyFingerprint(FingerprintCompareRequest request)
 {
     // Validar y convertir la huella digital en formato Base64
-    var validationResponse = ValidateAndConvertBase64ToBytes(fingerprintBase64, "Fingerprint data is missing or invalid.");
+    var validationResponse = ValidateAndConvertBase64ToBytes(request.FingerprintData, "Fingerprint data is missing or invalid.");
     if (!validationResponse.Success)
     {
         return new ApiResponse<DtoFingerprintResponse>(false, validationResponse.Message, null);
@@ -199,7 +199,7 @@ public class FingerprintService : IFingerprintService
     var fmdInput = fmdResult.Data;
 
     // Obtener todas las huellas registradas desde la base de datos
-    var registeredFingerprints = _fingerprintRepository.GetAllFingerprints();
+    var registeredFingerprints = _fingerprintRepository.GetCompanyFingerprints(request.CompanyId);
 
     foreach (var registeredFingerprint in registeredFingerprints)
     {
@@ -212,12 +212,21 @@ public class FingerprintService : IFingerprintService
         {
             _logger.LogInformation($"Huella digital identificada: ID={registeredFingerprint.Id}, Employee ID={registeredFingerprint.EmployeeId}");
 
+            Employee employee = _fingerprintRepository.GetEmployeeById(registeredFingerprint.EmployeeId);
+
             // Devolver el DTO con la información correspondiente
             var response = new DtoFingerprintResponse
             {
                 Id = registeredFingerprint.Id,
                 EmployeeId = registeredFingerprint.EmployeeId,
                 Finger = registeredFingerprint.Finger,
+                IdCompany = employee.IdCompany,
+                Name = employee.Name,
+                Email = employee.Email,
+                NidUser = employee.NidUser,
+                Phone = employee.Phone,
+                Job = employee.Job,
+                IsActive = employee.IsActive,
                 CreatedDate = registeredFingerprint.CreatedDate
             };
 
