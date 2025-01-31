@@ -17,7 +17,7 @@ public class DtoFingerprintResponse
     /// <summary>
     /// Dedo al que corresponde la huella.
     /// </summary>
-    public Fingers Finger { get; set; }
+    public string Finger { get; set; }
 
     /// <summary>
     /// Identificador de la compañía a la que pertenece el usuario.

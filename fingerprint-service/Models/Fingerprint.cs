@@ -6,7 +6,6 @@ public class Fingerprint
     public int EmployeeId { get; set; } // Relación con la tabla de empleados
     public Fingers Finger { get; set; } // Ejemplo: "RIGHT_INDEX"
     public byte[] Fmd { get; set; } // Formato estándar de la huella digital
-    public int FmdQuality { get; set; } // Calidad del FMD
     public DateTime CreatedDate { get; set; } // Fecha de registro
     
 }

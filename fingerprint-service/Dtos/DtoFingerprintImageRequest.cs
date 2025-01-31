@@ -11,6 +11,12 @@ public class DtoFingerprintImageRequest
     public int EmployeeId { get; set; }
     
     /// <summary>
+    /// Identificador la empresa desde la cual se envía la solicitud.
+    /// </summary>
+    [Required(ErrorMessage = "El ID de la  compañía es obligatorio.")]
+    public int CompanyId { get; set; }
+    
+    /// <summary>
     /// Dedo al que corresponde la huella.
     /// </summary>
     [Required(ErrorMessage = "Indicar el dedo es obligatorio.")]

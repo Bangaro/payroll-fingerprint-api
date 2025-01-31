@@ -130,40 +130,6 @@ public class FingerprintController : ControllerBase
             ));
         }
     }
-
-
-    /// <summary>
-    /// Compara una huella digital con las huellas almacenadas en la base de datos.
-    /// </summary>
-    /// <param name="request">Un objeto FingerprintCompareRequest que contiene los datos de la huella digital a comparar.</param>
-    /// <returns>
-    /// Un objeto IActionResult que indica el resultado de la operación. 
-    /// En caso de éxito, devuelve un código de estado 200 OK y el objeto ApiResponse que contiene la información de la huella coincidente (si la hay). 
-    /// En caso de que no se encuentre ninguna coincidencia, devuelve un código de estado 200 OK y el objeto ApiResponse con un mensaje indicando que no se encontraron coincidencias.
-    /// En caso de error, devuelve un código de estado 500 InternalServerError y un objeto ApiResponse con un mensaje de error genérico. 
-    /// </returns>
-    [HttpPost("compare-fingerprint")]
-    public IActionResult CompareFingerprint([FromBody] FingerprintCompareRequest request)
-    {
-        if (string.IsNullOrEmpty(request.FingerprintData))
-        {
-            return BadRequest(new ApiResponse<string>(
-                success: false,
-                message: "Los datos de la huella son obligatorios."
-            ));
-        }
-
-        var result = _fingerprintService.CompareFingerprint(request.FingerprintData);
-
-        if (result.Success)
-        {
-            return Ok(result);
-        }
-        else
-        {
-            return NotFound(result);
-        }
-    }
     
 
     /// <summary>

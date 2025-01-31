@@ -53,7 +53,6 @@ public class FingerprintRepository : IFingerprintRepository
                             EmployeeId = Convert.ToInt32(reader["id_employee"]), 
                             Finger = (Fingers)Enum.Parse(typeof(Fingers), reader["finger"].ToString()), 
                             Fmd = (byte[])reader["fmd"], 
-                            FmdQuality = Convert.ToInt32(reader["fmd_quality"]), 
                             CreatedDate = Convert.ToDateTime(reader["created_date"]),
                         });
                     }
@@ -74,7 +73,7 @@ public class FingerprintRepository : IFingerprintRepository
             {
 
                 var query = $@"
-                SELECT f.id, f.id_employee, f.finger, f.fmd, f.fmd_quality, f.created_date
+                SELECT f.id, f.id_employee, f.finger, f.fmd, f.created_date
                 FROM {fingerprintTable} f, payroll_employees pe
                 WHERE pe.id_company = @companyId;";
 
@@ -92,7 +91,6 @@ public class FingerprintRepository : IFingerprintRepository
                                 EmployeeId = Convert.ToInt32(reader["id_employee"]), 
                                 Finger = (Fingers)Enum.Parse(typeof(Fingers), reader["finger"].ToString()), 
                                 Fmd = (byte[])reader["fmd"], 
-                                FmdQuality = Convert.ToInt32(reader["fmd_quality"]), 
                                 CreatedDate = Convert.ToDateTime(reader["created_date"]),
                             });
                         }
@@ -124,7 +122,7 @@ public class FingerprintRepository : IFingerprintRepository
             using (var connection = _dbConnection.CreateConnection())
             {
                 var query = $@"
-                SELECT id, id_employee, finger, fmd, fmd_quality, created_date
+                SELECT id, id_employee, finger, fmd, created_date
                 FROM {fingerprintTable} WHERE id_employee = @employee;";
 
                 using (var command = new MySqlCommand(query, (MySqlConnection)connection))
@@ -141,7 +139,6 @@ public class FingerprintRepository : IFingerprintRepository
                                 EmployeeId = Convert.ToInt32(reader["id_employee"]), 
                                 Finger = (Fingers)Enum.Parse(typeof(Fingers), reader["finger"].ToString()), 
                                 Fmd = (byte[])reader["fmd"], 
-                                FmdQuality = Convert.ToInt32(reader["fmd_quality"]), 
                                 CreatedDate = Convert.ToDateTime(reader["created_date"]),
                             });
                         }
@@ -219,24 +216,59 @@ public class FingerprintRepository : IFingerprintRepository
 
     
 
-    public bool AddFingerprint(Fingerprint fingerprint)
+public bool AddFingerprint(Fingerprint fingerprint)
+{
+    try
     {
         using (var connection = _dbConnection.CreateConnection())
         {
-            using (var command = new MySqlCommand($"INSERT INTO {fingerprintTable} (id_employee, finger, fmd, fmd_quality, created_date) VALUES (@id_employee, @finger, @fmd, @fmd_quality, @created_date)", (MySqlConnection)connection))
+            // Paso 1: Verificar si el empleado existe en la tabla payroll_employee
+            string checkEmployeeExists = "SELECT COUNT(*) FROM payroll_employees WHERE id = @id_employee";
+            using (var checkCommand = new MySqlCommand(checkEmployeeExists, (MySqlConnection)connection))
             {
-                // Asignar los valores de los parámetros
+                checkCommand.Parameters.AddWithValue("@id_employee", fingerprint.EmployeeId);
+                int employeeCount = Convert.ToInt32(checkCommand.ExecuteScalar());
+
+                if (employeeCount == 0)
+                {
+                    // El empleado no existe, lanzar una excepción personalizada
+                    string errorMessage = $"El empleado con ID {fingerprint.EmployeeId} no existe en la tabla payroll_employees.";
+                    _logger.LogError(errorMessage);
+                    throw new Exception(errorMessage);
+                }
+            }
+
+            // Paso 2: Insertar la huella si el empleado existe
+            string sql = $@"INSERT INTO {fingerprintTable} 
+                      (id_employee, finger, fmd, created_date) 
+                      VALUES (@id_employee, @finger, @fmd, @created_date)";
+            using (var command = new MySqlCommand(sql, (MySqlConnection)connection))
+            {
                 command.Parameters.AddWithValue("@id_employee", fingerprint.EmployeeId);
                 command.Parameters.AddWithValue("@finger", fingerprint.Finger);
                 command.Parameters.AddWithValue("@fmd", fingerprint.Fmd);
-                command.Parameters.AddWithValue("@fmd_quality", fingerprint.FmdQuality);
                 command.Parameters.AddWithValue("@created_date", fingerprint.CreatedDate);
 
-                // Ejecutar el comando y devolver si afectó alguna fila
-                return command.ExecuteNonQuery() > 0;
+                int rowsAffected = command.ExecuteNonQuery();
+                _logger.LogInformation($"Dedo agregado: {fingerprint.Finger} para el empleado {fingerprint.EmployeeId}");
+                return rowsAffected > 0;
             }
         }
     }
+    catch (MySqlException ex) when (ex.Number == 1062) // Error de duplicado
+    {
+        string errorMessage = $"Dedo duplicado para empleado {fingerprint.EmployeeId}, dedo {fingerprint.Finger}";
+        _logger.LogError(ex, errorMessage);
+
+        // Lanza la excepción personalizada
+        throw new Exception(errorMessage);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Ha ocurrido un error al guardar la huella");
+        throw;
+    }
+}
     
     public bool DeleteAllUserFingerprints(int employeeId)
     {
@@ -262,43 +294,60 @@ public class FingerprintRepository : IFingerprintRepository
     /// </summary>
     /// <param name="fingerprint">Un objeto que contiene el ID del empleado y opcionalmente el dedo a eliminar.</param>
     /// <returns>True si se eliminó al menos una huella, false en caso contrario.</returns>
-    private bool DeleteFingerprints(DtoFingerprintDelete fingerprint)
+private bool DeleteFingerprints(DtoFingerprintDelete fingerprint)
+{
+    // Indicador para determinar si la eliminación fue exitosa
+    bool isDeleted = false;
+
+    // Determinar el tipo de eliminación y registrar información
+    _logger.LogInformation(fingerprint.Finger == null
+        ? $"Eliminando todas las huellas para EmployeeId: {fingerprint.EmployeeId}."
+        : $"Eliminando huella para EmployeeId: {fingerprint.EmployeeId}, Finger: {fingerprint.Finger}.");
+
+    using (var connection = _dbConnection.CreateConnection())
     {
-        // Indicador para determinar si la eliminación fue exitosa
-        bool isDeleted = false;
-
-        // Determinar el tipo de eliminación y registrar información
-        _logger.LogInformation(fingerprint.Finger == null
-            ? $"Eliminando todas las huellas para EmployeeId: {fingerprint.EmployeeId}."
-            : $"Eliminando huella para EmployeeId: {fingerprint.EmployeeId}, Finger: {fingerprint.Finger}.");
-
-        using (var connection = _dbConnection.CreateConnection())
-        {
-            // Construir la consulta SQL según si se especificó un dedo
-            var query = $@"
+        // Construir la consulta SQL según si se especificó un dedo
+        var query = $@"
             DELETE FROM {fingerprintTable}
             WHERE id_employee = @employeeId"
                         + (fingerprint.Finger != null ? " AND finger = @finger" : "") + ";";
 
-            using (var command = new MySqlCommand(query, (MySqlConnection)connection))
+        using (var command = new MySqlCommand(query, (MySqlConnection)connection))
+        {
+            // Asignar el parámetro obligatorio
+            command.Parameters.AddWithValue("@employeeId", fingerprint.EmployeeId);
+
+            // Asignar el parámetro opcional si se especificó el dedo
+            if (fingerprint.Finger != null)
             {
-                // Asignar el parámetro obligatorio
-                command.Parameters.AddWithValue("@employeeId", fingerprint.EmployeeId);
-
-                // Asignar el parámetro opcional si se especificó el dedo
-                if (fingerprint.Finger != null)
+                try
                 {
-                    command.Parameters.AddWithValue("@finger", fingerprint.Finger);
+                    // Parsear el string al enume Fingers
+                    Fingers parsedFinger = (Fingers)Enum.Parse(typeof(Fingers), fingerprint.Finger, true);
+
+                    // Convertir el valor del enum a int
+                    int fingerValue = (int)parsedFinger;
+                    
+                    command.Parameters.AddWithValue("@finger", fingerValue);
+
+                    // Registrar el valor parseado para depuración
+                    _logger.LogInformation($"Dedo parseado: {parsedFinger}, Valor numérico: {fingerValue}");
                 }
-
-                // Ejecutar el comando y verificar si afectó alguna fila
-                int rowsAffected = command.ExecuteNonQuery();
-                isDeleted = rowsAffected > 0;
+                catch (ArgumentException ex)
+                {
+                    _logger.LogError($"Error al parsear el dedo '{fingerprint.Finger}'. Detalles: {ex.Message}");
+                    return false; 
+                }
             }
-        }
 
-        return isDeleted;
+            // Ejecutar el comando y verificar si afectó alguna fila
+            int rowsAffected = command.ExecuteNonQuery();
+            isDeleted = rowsAffected > 0;
+        }
     }
+
+    return isDeleted;
+}
 
 
 }

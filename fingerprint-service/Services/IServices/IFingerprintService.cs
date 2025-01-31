@@ -64,12 +64,6 @@ namespace fingerprint_service.Services.Interfaces
         /// </summary>
         /// <param name="fingerprintBase64">La huella digital en formato base64.</param>
         /// <returns>Una respuesta que contiene la información de la huella coincidente o un mensaje de error si no se encuentra coincidencia.</returns>
-        ApiResponse<Fingerprint> CompareFingerprint(string fingerprintBase64);
-
-        /// <summary>
-        /// Verifica si hay huellas digitales duplicadas en la base de datos.
-        /// </summary>
-        /// <returns>Una respuesta que indica si se encontraron coincidencias.</returns>
-        ApiResponse<bool> CheckFingerprintMatchesInDatabase();
+        ApiResponse<Fingerprint> CompareFingerprint(string fingerprintBase64, int companyId);
     }
 }
