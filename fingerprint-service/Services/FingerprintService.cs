@@ -198,7 +198,7 @@ public class FingerprintService : IFingerprintService
                     Id = registeredFingerprint.Id,
                     EmployeeId = registeredFingerprint.EmployeeId,
                     Finger = registeredFingerprint.Finger.ToString(),
-                    IdCompany = employee.IdCompany,
+                    CompanyId = employee.IdCompany,
                     Name = employee.Name,
                     Email = employee.Email,
                     NidUser = employee.NidUser,
@@ -246,7 +246,7 @@ public class FingerprintService : IFingerprintService
             }
 
             // Retornar respuesta de éxito
-            return new ApiResponse<bool>(true, result ? "Huellas eliminadas correctamente." : "No se encontraron huellas para eliminar.", result);
+            return new ApiResponse<bool>(true, result ? "Huella eliminada correctamente." : "No se encontraron huellas para eliminar.", result);
         }
         catch (Exception ex)
         {

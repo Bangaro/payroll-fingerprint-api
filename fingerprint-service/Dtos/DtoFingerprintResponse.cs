@@ -22,7 +22,7 @@ public class DtoFingerprintResponse
     /// <summary>
     /// Identificador de la compañía a la que pertenece el usuario.
     /// </summary>
-    public int IdCompany { get; set; }
+    public int CompanyId { get; set; }
 
     /// <summary>
     /// Nombre del usuario asociado a la huella.

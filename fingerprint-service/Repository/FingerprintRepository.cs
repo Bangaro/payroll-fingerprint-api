@@ -11,6 +11,21 @@ public class FingerprintRepository : IFingerprintRepository
     private readonly DbConnection _dbConnection;
     private readonly ILogger<FingerprintRepository> _logger;
     private readonly string fingerprintTable = "payroll_employee_fingerprints";
+    // Mapeo de nombres de dedos en inglés a español
+    private static readonly Dictionary<string, string> FingerNames = new Dictionary<string, string>
+    {
+        { "RIGHT_THUMB", "Pulgar derecho" },
+        { "RIGHT_INDEX", "Índice derecho" },
+        { "RIGHT_MIDDLE", "Medio derecho" },
+        { "RIGHT_RING", "Anular derecho" },
+        { "RIGHT_PINKY", "Meñique derecho" },
+        { "LEFT_THUMB", "Pulgar izquierdo" },
+        { "LEFT_INDEX", "Índice izquierdo" },
+        { "LEFT_MIDDLE", "Medio izquierdo" },
+        { "LEFT_RING", "Anular izquierdo" },
+        { "LEFT_PINKY", "Meñique izquierdo" }
+    };
+
 
     public FingerprintRepository(DbConnection dbConnection, ILogger<FingerprintRepository> logger)
     {
@@ -257,12 +272,14 @@ public bool AddFingerprint(Fingerprint fingerprint)
     }
     catch (MySqlException ex) when (ex.Number == 1062) // Error de duplicado
     {
-        string errorMessage = $"Dedo duplicado para empleado {fingerprint.EmployeeId}, dedo {fingerprint.Finger}";
+        string fingerName = FingerNames.ContainsKey(fingerprint.Finger.ToString()) ? FingerNames[fingerprint.Finger.ToString()] : fingerprint.Finger.ToString();
+        string errorMessage = $"Dedo duplicado para este empleado, procura elegir un dedo distinto al {fingerName}";
         _logger.LogError(ex, errorMessage);
 
         // Lanza la excepción personalizada
         throw new Exception(errorMessage);
     }
+
     catch (Exception ex)
     {
         _logger.LogError(ex, "Ha ocurrido un error al guardar la huella");
