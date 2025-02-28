@@ -1,5 +1,6 @@
 ﻿using fingerprint_service.Dtos;
 using fingerprint_service.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace fingerprint_service.Controllers;
@@ -16,6 +17,7 @@ public class FingerprintController : ControllerBase
     }
 
     [HttpGet("test-connection")]
+    [Authorize]
     public IActionResult TestConnection()
     {
         try
@@ -39,6 +41,7 @@ public class FingerprintController : ControllerBase
     ///   devuelve el objeto ApiResponse que contiene la información de la respuesta.
     /// </returns>
     [HttpPost("process-fingerprint")]
+    [Authorize]
     public IActionResult ProcessAndEnrollFingerprint([FromBody] DtoFingerprintImageRequest request)
     {
         if (!ModelState.IsValid)
@@ -90,6 +93,7 @@ public class FingerprintController : ControllerBase
     /// En caso de error interno, devuelve un código de estado 500 InternalServerError y un objeto ApiResponse con un mensaje de error genérico.
     /// </returns>
     [HttpPost("identify-fingerprint")]
+    [Authorize]
     public IActionResult IdentifyFingerprint([FromBody] FingerprintCompareRequest request)
     {
         if (!ModelState.IsValid)
@@ -144,6 +148,7 @@ public class FingerprintController : ControllerBase
     /// En caso de error interno, devuelve un código de estado 500 InternalServerError y un objeto ApiResponse con un mensaje de error genérico.
     /// </returns>
     [HttpDelete("delete-fingerprint")]
+    [Authorize]
     public IActionResult DeleteFingerprint([FromBody] DtoFingerprintDelete request)
     {
         if (request.EmployeeId <= 0)
