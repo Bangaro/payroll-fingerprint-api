@@ -38,8 +38,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:ISS"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ?? "tu_clave_secreta_aqui")),
-            ClockSkew = TimeSpan.Zero // Elimina tolerancia de tiempo adicional
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ?? "")),
+            ClockSkew = TimeSpan.Zero 
         };
     });
 
